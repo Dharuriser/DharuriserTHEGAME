@@ -21,7 +21,7 @@ Codex・Claude Code のどちらが作業しても同じ結果になるように
 | 1 | 立ち＋歩き | `Dharuriser_walk` | 3列×3行（9コマ） | 0 立ち（構え）/ 1 右足を前に踏み出して接地 / 2 体が沈む / 3 左足が右足を追い越す / 4 体が浮く / 5 左足を前に踏み出して接地 / 6 体が沈む / 7 右足が左足を追い越す / 8 体が浮く |
 | 2 | 被弾〜ダウン〜起き上がり | `Dharuriser_damage` | 3列×3行（9コマ） | 0 立ち（大きさの基準）/ 1 殴られてのけぞる / 2 足が浮いて後ろへ吹き飛ぶ（空中）/ 3 背中から落ちる（空中）/ 4 仰向けに倒れている / 5 片ひじをついて上半身を起こす / 6 片ひざ立ち / 7 立ち上がる途中 / 8 立ち（構え直し） |
 | 3 | パンチ | `Dharuriser_punch` | 3列×2行（5〜6コマ） | 0 構え / 1 振りかぶり / 2 腕を伸ばす途中 / 3 腕が伸びきる（命中の瞬間）/ 4 戻し / 5 構えに戻る直前 |
-| 4 | ジャンプキック | `Dharuriser_kick` | 4列×2行（7〜8コマ） | 0 構え / 1 しゃがむ（踏み切り）/ 2 跳び上がる（空中）/ 3 蹴り足を伸ばす（空中）/ 4 蹴りを保ったまま落ちる（空中）/ 5 着地でしゃがむ / 6 立ち上がる |
+| 4 | 飛び蹴り（ライダーキック風） | `Dharuriser_kick` | 今は作らなくてよい | 今の画像のコマをプログラムで回転・移動させて動かしている（`riderKick()`）。作り直す場合は、**コマ番号の役割（1 しゃがみ・宙返り用 / 2 跳び上がり / 3 急降下の蹴り / 5 着地 / 6 立ち直り）を変えない**こと。専用に「宙返り中の丸まった姿勢」のコマを増やすとさらに良くなる |
 | 5 | 立ちキック | `Dharuriser_kick02` | 3列×2行（5コマ） | 構え / 足を引く / 蹴り足を伸ばす / 戻す / 構え |
 | 6 | ガード | `Dharuriser_guard` | 3列×1行（3コマ） | 構え / 両腕で顔を守る / 攻撃を受け止めて少し押される |
 | 7 | 必殺技 | `Dharuriser_smash` | 3列×2行（6コマ） | 構え / 力を溜める / エネルギーを拳に集める / 突き出す / 光が伸びる / 構えに戻る |
@@ -93,7 +93,7 @@ python3 tools/sprite_pipeline.py inject sprites/build/Dharuriser_walk.png --key 
 | 立ち＋歩き | `--grid 3x3 --anchor hip` |
 | 被弾〜起き上がり | `--grid 3x3 --anchor first --air 2,3` |
 | パンチ | `--grid 3x2 --frames 6 --anchor first` |
-| ジャンプキック | `--grid 4x2 --frames 7 --anchor first --air 2,3,4` |
+| 飛び蹴り | `--grid 4x2 --frames 7 --anchor first --air 2,3,4`（作り直す場合のみ）|
 | 立ちキック | `--grid 3x2 --frames 5 --anchor first` |
 | ガード | `--grid 3x1 --anchor first` |
 | 必殺技 | `--grid 3x2 --anchor first` |
@@ -112,7 +112,7 @@ python3 tools/sprite_pipeline.py inject sprites/build/Dharuriser_walk.png --key 
 | walk | `idle:['walk',[0],1]`、`walk:['walk',[1,2,3,4,5,6,7,8],6]`。`FOFS.p.walk` は削除（ツールで揃うので不要）。`WALK_STRIDE.p` は「1歩の歩幅(px)×0.45÷4」に合わせ直す |
 | damage | `hurt:['damage',[1,1,0],4]`（描画時ののけぞり `dsRot` は不要になるので外す）、`down:['damage',[1,2,2,3,3,4,4,4,4,4],5]`、`dead:['damage',[4],1]`、`getup:['damage',[5,6,7,8],6]`、`FLOOR_F.p=4` |
 | punch | 振りかぶり6・伸ばし6・戻し6フレームを守る。例：`punch:['punch',[1,1,2,3,4,5],3]`。当たり判定は `hit=(vf>=2&&vf<=3)` |
-| kick | 踏み切り6・滞空30（うち蹴り18）・着地9フレーム。当たり判定は「蹴り足が伸びているコマ」だけ（`hit=ANIM.p.kick[1][vf]===3`） |
+| kick | 飛び蹴りは `riderKick()` がコマ・高さ・回転を決める。各コマの体の中心を `RKC` に登録し直す（`tools/sprite_pipeline.py` の `_check.png` で確認） |
 
 タイミングの数字は、アーケード版ダブルドラゴンのプレイ映像を1コマずつ測った値です（`docs/HANDOFF.md` 参照）。
 
