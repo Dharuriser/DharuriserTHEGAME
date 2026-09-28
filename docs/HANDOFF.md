@@ -1,6 +1,6 @@
 # 引き継ぎ書（Codex / Claude Code 共用）
 
-最終更新: 2026-09-27 / 作業ブランチ: `claude/loving-wright-wu1w7r`（`main` には未反映）
+最終更新: 2026-09-28 / 作業ブランチ: `claude/loving-wright-wu1w7r`（`main` には未反映）
 
 ## このプロジェクト
 
@@ -48,6 +48,14 @@
 
 - [ ] **モーションの作り直し**（画像生成 → `tools/sprite_pipeline.py` で整えて組み込み）。仕様は `docs/sprite-spec.md`。
   - Codex への具体的な依頼は `docs/codex-task.md`（第1弾: 立ち＋歩き）。Codex は生成・整形・コミットまで、`index.html` への組み込みとコード調整は Claude Code。
+  - **第1弾の結果（2026-09-28）: 合格なし・組み込みは見送り。** Codex が `image_gen` で3回生成（`sprites/generated/walk_v1〜v3.png`、整形結果は `sprites/build/`）。
+    デザイン・右向き3/4・頭身・背景除去はどの版も良好。しかし**3版とも「2コマ目と6コマ目で前に出る足が同じ」**（左右の足が交互にならない）。
+    v3 は8コマがほぼ同じ大股の姿勢。v2 が一番動きに差があるが、7コマ目が膝を高く上げた走りの姿勢。
+    次の案: 9コマを1枚で作らせず、「右足前の半周期（4コマ）」を作ってから、それを参考画像にして「左足前の半周期」を別に生成する／1コマずつ生成する。
+  - Codex の呼び出しで詰まった点: `~/.codex/config.toml` の既定モデル `gpt-6-astra` はこの環境では使えない（`--model gpt-5.6-sol` を指定）。
+    npm 版 Codex（0.157.1）は ChatGPT アプリ常駐の `code-mode-host` と通信形式が合わず、コマンドが全部失敗する。
+    ChatGPT アプリ同梱の `/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex` で `codex exec` すると動いた
+    （画面操作系プラグインは `-c 'plugins."computer-use@openai-bundled".enabled=false'` などで無効化）。
 - [ ] オーナーの確認が済んだら `main` に反映（本番公開になるので必ず確認を取る）。
 - [ ] 主人公を遅くしたので相対的に敵が速い → 難しすぎないか確認、必要なら敵速度も調整。
 - [ ] ファイルが重い（74MB）: 効果音が 96kHz/24bit の WAV のまま。圧縮すれば大幅に軽くなる。
