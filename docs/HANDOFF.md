@@ -51,7 +51,12 @@
   - **第1弾の結果（2026-09-28）: 合格なし・組み込みは見送り。** Codex が `image_gen` で3回生成（`sprites/generated/walk_v1〜v3.png`、整形結果は `sprites/build/`）。
     デザイン・右向き3/4・頭身・背景除去はどの版も良好。しかし**3版とも「2コマ目と6コマ目で前に出る足が同じ」**（左右の足が交互にならない）。
     v3 は8コマがほぼ同じ大股の姿勢。v2 が一番動きに差があるが、7コマ目が膝を高く上げた走りの姿勢。
-    次の案: 9コマを1枚で作らせず、「右足前の半周期（4コマ）」を作ってから、それを参考画像にして「左足前の半周期」を別に生成する／1コマずつ生成する。
+  - **やり直し（半分ずつ作る方式）で合格 → 組み込み済み（2026-09-28）。** 手順は `docs/codex-task.md` の「第1弾やり直し」。
+    前半（手前の足が前）を生成 `walk_a_v2.png` → それを**編集**して足を入れ替えた後半 `walk_b_v3.png`（編集3回目でやっと入れ替わった）。
+    合わせた9コマ `sprites/build/Dharuriser_walk_v4.png` を `Dharuriser_walk` に inject。
+    コード: `ANIM.p.walk=['walk',[1,2,3,4,5,6,3,8],6]`（後半の「足が追い越す」コマは大股だったので、足がそろう前半の3コマ目を使い回す）、
+    `WALK_STRIDE.p=11`（歩幅 約100px(元画像)×0.45÷4）、`FOFS.p` は削除（ツールで腰の位置を揃えたので不要）。
+    残る弱点: 後半4コマは腕の振りが前半と同じ（入れ替わっていない）。ゲームの大きさではほぼ目立たない。
   - Codex の呼び出しで詰まった点: `~/.codex/config.toml` の既定モデル `gpt-6-astra` はこの環境では使えない（`--model gpt-5.6-sol` を指定）。
     npm 版 Codex（0.157.1）は ChatGPT アプリ常駐の `code-mode-host` と通信形式が合わず、コマンドが全部失敗する。
     ChatGPT アプリ同梱の `/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex` で `codex exec` すると動いた
