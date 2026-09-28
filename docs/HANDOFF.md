@@ -46,7 +46,8 @@
 
 ## 次にやること
 
-- [ ] **モーションの作り直し**（GPT-Image 2.5 で生成 → `tools/sprite_pipeline.py` で整えて組み込み）。仕様は `docs/sprite-spec.md`。
+- [ ] **モーションの作り直し**（画像生成 → `tools/sprite_pipeline.py` で整えて組み込み）。仕様は `docs/sprite-spec.md`。
+  - Codex への具体的な依頼は `docs/codex-task.md`（第1弾: 立ち＋歩き）。Codex は生成・整形・コミットまで、`index.html` への組み込みとコード調整は Claude Code。
 - [ ] オーナーの確認が済んだら `main` に反映（本番公開になるので必ず確認を取る）。
 - [ ] 主人公を遅くしたので相対的に敵が速い → 難しすぎないか確認、必要なら敵速度も調整。
 - [ ] ファイルが重い（74MB）: 効果音が 96kHz/24bit の WAV のまま。圧縮すれば大幅に軽くなる。
