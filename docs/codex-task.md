@@ -184,6 +184,56 @@ B が3回とも不合格なら C はやらずに止めて報告する。
 **報告**: A・B それぞれの合否とコマごとの問題点、最終プロンプト、`image_gen` を使ったか（編集として画像を渡せたか）、作ったファイルのパス。
 `index.html` の組み込みと、git のコミット・push は Claude Code が行う。
 
+## 第1弾その3: ダブルドラゴン（ビリー）の歩きを見本にして作る（2026-09-28 追加）
+
+### これまでの結果とオーナーの感想
+
+- 「半分ずつ」方式の9コマ（`Dharuriser_walk_v4`）を組み込んだが、オーナーの評価は「足がスムーズに動いていない」「腕の振りも必要」。
+- 原因: ①足の開き具合が「大股→中→そろう→**大股→大股**→中→そろう→大股」と、大股が2回続く所がある。②普通の散歩の歩き方で、後半は腕の振りが入れ替わっていない。
+- オーナーが自然だと考えているのはダブルドラゴンの歩き。見本: `sprites/reference/DD_Billy_walk_pose_ref.png`
+  （スーパーダブルドラゴンのビリー。左上が立ち、続けて歩き6コマ: **大股 → 中 → そろう → 大股（逆の足） → 中 → そろう**。上半身はほぼ動かず、手前の腕が前後に振れる）
+- 画像生成は文章で「左足を前に」と指示すると失敗するが、**見本の絵のポーズを写す**方が得意なはず。今回はこれを試す。
+
+### 手順 — 生成は最大3回。保存先 `sprites/generated/walk_dd_v1.png`〜`walk_dd_v3.png`
+
+参考画像（すべて `image_gen` に渡す）:
+1. `sprites/reference/DD_Billy_walk_pose_ref.png` … **ポーズの見本**（足と腕の位置だけを写す。絵柄・服・顔は写さない）
+2. `sprites/reference/Dharuriser_design_sheet.png`、`sprites/reference/Dharuriser_idle_x3.png` … キャラのデザイン
+3. `sprites/generated/walk_a_v2.png` … 前回合格した絵（配色・縮尺・3/4ビューの参考）
+
+```
+Image 1 is a POSE reference only: a 4x2 sheet of a classic beat-'em-up walk (idle + 6 walking frames).
+Images 2-4 are the exact character design reference (Dharuriser, a Japanese tokusatsu hero):
+red full-body suit, gold emblem on the chest, white shoulder armor, white-and-red helmet with a black visor, black knee pads and black belt.
+Keep his realistic adult hero proportions (about 7.5 heads tall). NOT chibi. Do NOT copy the pose reference's clothes, hair, face or colors.
+
+Create a pixel-art sprite sheet with EXACTLY the same layout as Image 1: 4 columns x 2 rows, 8 cells of identical size.
+In every cell draw Dharuriser in EXACTLY the same leg and arm positions as the same cell of Image 1
+(same stride width, same which-leg-is-forward, same arm position), but in a 3/4 front view facing RIGHT like Image 4.
+Same scale in every cell, feet on the same ground line near the bottom of the cell.
+Crisp 1-pixel dark outline, limited palette matching Image 4.
+Background: solid flat pure green #00FF00 in every cell. No shadow, no floor, no text, no numbers, no grid lines.
+
+Cell 1: idle fighting stance (as Image 4).
+Cells 2-7: a calm fighter's walk, upper body upright and steady, fists loosely clenched, arms swinging opposite to the legs:
+ 2. wide stride, NEAR leg forward, near arm back
+ 3. legs closing, medium stride
+ 4. legs together, passing
+ 5. wide stride, FAR leg forward, NEAR leg back, near arm forward
+ 6. legs closing, medium stride
+ 7. legs together, passing
+Cell 8: empty (only green).
+```
+
+整形: `python3 tools/sprite_pipeline.py build sprites/generated/walk_dd_vN.png --grid 4x2 --frames 7 --name Dharuriser_walk_dd_vN --anchor hip`
+
+合格条件（`_check.png` と見本を並べて判定）:
+- 2〜7コマ目の足の開き具合が「大股→中→そろう→大股→中→そろう」の順になっている（見本と同じ）
+- 2コマ目と5コマ目で**前に出ている足が逆**、**腕の振りも逆**（見本の2コマ目・5コマ目と同じ関係）
+- 上半身の傾き・高さがコマごとに大きく変わらない／デザイン・大きさが揃っている／右向き3/4ビュー
+
+報告: 合否とコマごとの問題点、最終プロンプト、作ったファイルのパス。`index.html` の組み込みと git 操作は Claude Code が行う。
+
 ## 第2弾以降（第1弾が合格してから）
 
 同じ手順で、`docs/sprite-spec.md` の表の順に進める。
