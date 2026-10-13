@@ -174,7 +174,8 @@ def split_grid(img, cols, rows, frames):
     return cells
 
 
-def normalize(cells, anchor='hip', ref_frame=0, ref_height=REF_HEIGHT, scale=None, flip=False, keep_y=False, air=()):
+def normalize(cells, anchor='hip', ref_frame=0, ref_height=REF_HEIGHT, scale=None, flip=False, keep_y=False, air=(),
+              anchor_x=ANCHOR_X, baseline=BASELINE_Y):
     """全コマを同じ倍率で縮小し、足元の高さと腰の位置を揃えて 400x300 のコマにする。
     anchor='hip'  : 毎コマ腰の位置を揃える(歩き・待機など、その場の動き向け)
     anchor='first': 基準コマの腰に合わせた「同じずらし量」を全コマに使う
@@ -200,15 +201,15 @@ def normalize(cells, anchor='hip', ref_frame=0, ref_height=REF_HEIGHT, scale=Non
         arr = np.array(sc); arr[..., 3] = np.where(arr[..., 3] >= 128, 255, 0)
         scaled.append(Image.fromarray(arr))
     ref = scaled[ref_frame]; rb = bbox(ref)
-    ref_dx = ANCHOR_X - hip_x(ref, rb[3], ref_height)
-    ref_dy = BASELINE_Y - rb[3]
+    ref_dx = anchor_x - hip_x(ref, rb[3], ref_height)
+    ref_dy = baseline - rb[3]
     out, info = [], []
     for i, sc in enumerate(scaled):
         if sc is None:
             out.append(Image.new('RGBA', (CELL_W, CELL_H))); info.append(None); continue
         sb = bbox(sc); base = sb[3]; hx = hip_x(sc, base, ref_height)
-        dx = ANCHOR_X - hx if anchor == 'hip' else ref_dx
-        dy = ref_dy if (keep_y or i in air) else BASELINE_Y - base
+        dx = anchor_x - hx if anchor == 'hip' else ref_dx
+        dy = ref_dy if (keep_y or i in air) else baseline - base
         cell = Image.new('RGBA', (CELL_W, CELL_H))
         paste_clip(cell, sc, dx, dy)
         out.append(cell)
@@ -299,7 +300,7 @@ def cmd_build(args):
         cleaned.append(clean_specks(c))
     print(f'背景色 RGB{tuple(int(v) for v in bg)} / 消し方: {mode}')
     out, scale, info = normalize(cleaned, args.anchor, args.ref_frame, args.ref_height, args.scale, args.flip, args.keep_y,
-                                  tuple(int(x) for x in args.air.split(',') if x.strip()))
+                                  tuple(int(x) for x in args.air.split(',') if x.strip()), args.anchor_x, args.baseline)
     path = save_outputs(out, args.name, args.out, args.ms)
     meta = {'source': args.image, 'grid': args.grid, 'frames': frames, 'scale': scale, 'anchor': args.anchor,
             'frames_info': [None if f is None else {k: (float(v) if not isinstance(v, tuple) else [int(x) for x in v]) for k, v in f.items()} for f in info]}
@@ -338,6 +339,8 @@ def main():
     b.add_argument('--ref-frame', type=int, default=0, help='直立しているコマの番号(大きさの基準)')
     b.add_argument('--ref-height', type=int, default=REF_HEIGHT, help='直立時の身長px(今の主人公は236)')
     b.add_argument('--scale', type=float, help='倍率を直接指定(他のシートと大きさを揃えたいとき)')
+    b.add_argument('--anchor-x', type=float, default=ANCHOR_X, help='腰の中心を揃える横位置px(主人公は168。敵は今の立ちコマに合わせる)')
+    b.add_argument('--baseline', type=int, default=BASELINE_Y, help='足の裏を揃える縦位置px(主人公は299)')
     b.add_argument('--flip', action='store_true', help='左向きに生成された場合に反転する')
     b.add_argument('--keep-y', action='store_true', help='全コマで足元を揃えない(ジャンプなど)')
     b.add_argument('--air', default='', help='空中にいるコマ番号(カンマ区切り 例: 2,3)。そのコマだけ足元を揃えない')

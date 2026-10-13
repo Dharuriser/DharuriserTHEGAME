@@ -234,6 +234,68 @@ Cell 8: empty (only green).
 
 報告: 合否とコマごとの問題点、最終プロンプト、作ったファイルのパス。`index.html` の組み込みと git 操作は Claude Code が行う。
 
+## 敵の歩きの作り直し（2026-10-13 追加）
+
+主人公の歩き（`walk_dd_v3`、ビリーの歩きをポーズ見本にした6コマ）はオーナーの合格が出た。**同じ方法で敵4体の歩きを作り直す。**
+今の敵の歩きは真横向きのコマを往復再生していて、主人公と同じ問題（同じ足が続く・立ちや攻撃と体の向きが違う）がある。
+enemyC（小柄な軽業師）は歩きではなくアクロバット移動なので対象外。
+
+| 敵 | 画像名 | デザイン見本 | build の追加オプション |
+|---|---|---|---|
+| enemyA（紫ポンチョ・標準） | `enemyA_walk` | `sprites/reference/enemyA_design_ref.png` | `--ref-height 240 --anchor-x 165 --baseline 299` |
+| enemyB（紫ポンチョ・長身） | `enemyB_walk` | `sprites/reference/enemyB_design_ref.png` | `--ref-height 248 --anchor-x 177 --baseline 298` |
+| DICE（黒スーツ・赤い一つ目の仮面） | `DICE_walk` | `sprites/reference/DICE_design_ref.png` | `--ref-height 246 --anchor-x 185 --baseline 299` |
+| Bajioh（コート・仮面） | `Bajioh_walk` | `sprites/reference/Bajioh_design_ref.png` | `--ref-height 237 --anchor-x 170 --baseline 299` |
+
+デザイン見本は、左に立ち姿（2倍）、右に今のパンチ・キックのコマを並べたもの（ゲームに入っている絵そのもの）。
+追加オプションは、今の立ちコマと同じ身長・立ち位置に揃えるための値（攻撃の絵に切り替わったときに位置がずれないように）。
+
+### 手順（敵1体につき）— 生成は最大3回。保存先 `sprites/generated/<敵>_walk_dd_v1.png`〜`_v3.png`
+
+参考画像（すべて `image_gen` に渡す）:
+1. `sprites/reference/DD_Billy_walk_pose_ref.png` … **ポーズの見本**（足と腕の位置だけを写す）
+2. その敵のデザイン見本 … キャラのデザイン・絵柄・頭身・カメラの角度
+3. `sprites/generated/walk_dd_v3.png` … 主人公で合格した出力。**レイアウト・足の開き方・腕の振りの手本**（キャラのデザインは写さない）
+
+```
+Image 1 is a POSE reference only: a 4x2 sheet of a classic beat-'em-up walk (idle + 6 walking frames).
+Image 2 is the exact character design reference for the character to draw (an enemy from a pixel-art beat-'em-up):
+<その敵の見た目を、デザイン見本を見て具体的に書く。服・頭部・手・靴・色>
+Image 3 is a finished example of this same task for a different character: copy its layout, stride widths and arm swing, NOT its character design.
+Keep the proportions, pixel-art style and palette of Image 2. Do NOT copy the clothes, hair, face or colors of Image 1 or Image 3.
+
+Create a pixel-art sprite sheet with EXACTLY the same layout as Image 1: 4 columns x 2 rows, 8 cells of identical size.
+In every cell draw the Image 2 character in EXACTLY the same leg and arm positions as the same cell of Image 1
+(same stride width, same which-leg-is-forward, same arm position), in a 3/4 front view facing RIGHT like the large pose in Image 2.
+Same scale in every cell, feet on the same ground line near the bottom of the cell.
+Crisp 1-pixel dark outline, limited palette matching Image 2.
+Background: solid flat pure green #00FF00 in every cell. No shadow, no floor, no text, no numbers, no grid lines.
+
+Cell 1: the idle stance exactly as the large pose in Image 2.
+Cells 2-7: a calm walk, upper body upright and steady, arms swinging opposite to the legs:
+ 2. wide stride, NEAR leg forward, near arm back
+ 3. legs closing, medium stride
+ 4. legs together, passing
+ 5. wide stride, FAR leg forward, NEAR leg back, near arm forward
+ 6. legs closing, medium stride
+ 7. legs together, passing
+Cell 8: empty (only green).
+```
+
+注意: 服に緑が含まれる敵はいないが、Bajioh の黒いコートや DICE の黒スーツは輪郭が背景に溶けやすいので、輪郭線を必ず入れさせる。
+主人公のときは、2コマ目と5コマ目の腕・足が同じになる失敗が2回続き、3回目に**画面上の位置と重なり方**で指示して成功した
+（例: 「5コマ目は、手前の腕が体の左側からお腹の前を横切って右へ出る」「手前の足は左へ伸び、奥の足に重なって全部見える」）。最初からこの言い方を足してよい。
+
+整形: `python3 tools/sprite_pipeline.py build sprites/generated/<敵>_walk_dd_vN.png --grid 4x2 --frames 7 --name <敵>_walk_dd_vN --anchor hip <表の追加オプション>`
+
+合格条件（`_check.png`・ポーズ見本・デザイン見本を並べて判定）:
+- 2〜7コマ目の足の開き具合が「大股→中→そろう→大股→中→そろう」
+- 2コマ目と5コマ目で前に出ている足が逆、腕の振りも逆
+- **デザイン見本と同じキャラに見える**（頭部・服・色・体格）。1コマ目の立ち姿がデザイン見本の立ち姿と同じ
+- 上半身の傾き・高さがコマごとに大きく変わらない／右向き3/4ビュー／体が欠けていない・緑が残っていない
+
+報告: 合否とコマごとの問題点、最終プロンプト、作ったファイルのパス。`index.html` の組み込みと git 操作は Claude Code が行う。
+
 ## 第2弾以降（第1弾が合格してから）
 
 同じ手順で、`docs/sprite-spec.md` の表の順に進める。
