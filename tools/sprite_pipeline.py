@@ -208,7 +208,9 @@ def normalize(cells, anchor='hip', ref_frame=0, ref_height=REF_HEIGHT, scale=Non
         if sc is None:
             out.append(Image.new('RGBA', (CELL_W, CELL_H))); info.append(None); continue
         sb = bbox(sc); base = sb[3]; hx = hip_x(sc, base, ref_height)
-        dx = anchor_x - hx if anchor == 'hip' else ref_dx
+        if anchor == 'center':   # 体全体の重心を揃える(逆立ち・宙返りなど、腰の高さが決まらない動き向け)
+            hx = float(np.nonzero(np.array(sc)[..., 3] > 0)[1].mean())
+        dx = anchor_x - hx if anchor in ('hip', 'center') else ref_dx
         dy = ref_dy if (keep_y or i in air) else baseline - base
         cell = Image.new('RGBA', (CELL_W, CELL_H))
         paste_clip(cell, sc, dx, dy)
@@ -324,6 +326,24 @@ def cmd_inject(args):
     print(f'{args.key} を差し替えました({im.width // CELL_W}コマ)。コマ数が変わった場合は index.html の ANIM も直してください')
 
 
+def cmd_measure(args):
+    """整形済みシート(1コマ400px)の各コマの身長・胴の幅・面積を表示する(体格が変わっていないかの確認用)"""
+    im = Image.open(args.image).convert('RGBA')
+    rows = []
+    for i in range(im.width // CELL_W):
+        c = im.crop((i * CELL_W, 0, (i + 1) * CELL_W, im.height)); b = bbox(c)
+        if b is None:
+            continue
+        a = np.array(c)[..., 3] > 0; h = b[3] - b[1] + 1
+        band = a[b[1] + int(h * 0.2): b[1] + int(h * 0.45)]
+        torso = max((int(np.ptp(np.nonzero(r)[0])) + 1) if r.any() else 0 for r in band)
+        rows.append((i, h, torso, int(a.sum())))
+        print(f'コマ{i}: 身長 {h}px / 胴の幅 {torso}px / 面積 {int(a.sum())}')
+    sel = [r for r in rows if args.first <= r[0] <= args.last] if args.last >= 0 else rows
+    if sel:
+        print(f'平均(コマ{sel[0][0]}〜{sel[-1][0]}): 身長 {np.mean([r[1] for r in sel]):.0f}px / 胴の幅 {np.mean([r[2] for r in sel]):.0f}px / 面積 {np.mean([r[3] for r in sel]):.0f}')
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest='cmd', required=True)
@@ -334,7 +354,7 @@ def main():
     b.add_argument('--frames', type=int, help='使うコマ数(左上から順に)')
     b.add_argument('--name', required=True, help='出力名 (例: Dharuriser_walk)')
     b.add_argument('--out', default='sprites/build')
-    b.add_argument('--anchor', choices=['hip', 'first'], default='hip',
+    b.add_argument('--anchor', choices=['hip', 'first', 'center'], default='hip',
                    help='hip: 毎コマ腰の位置を揃える(歩き・待機向け) / first: 1コマ目に揃えて体の移動を残す(攻撃向け)')
     b.add_argument('--ref-frame', type=int, default=0, help='直立しているコマの番号(大きさの基準)')
     b.add_argument('--ref-height', type=int, default=REF_HEIGHT, help='直立時の身長px(今の主人公は236)')
@@ -347,10 +367,12 @@ def main():
     b.add_argument('--tol', type=int, default=48, help='背景色とみなす色の近さ')
     b.add_argument('--bg-mode', choices=['auto', 'global', 'flood'], default='auto')
     b.add_argument('--ms', type=int, default=100, help='確認GIFの1コマの長さ(ミリ秒)')
+    m = sub.add_parser('measure', help='整形済みシートの各コマの身長・胴の幅を測る')
+    m.add_argument('image'); m.add_argument('--first', type=int, default=0); m.add_argument('--last', type=int, default=-1)
     i = sub.add_parser('inject', help='整えた画像を index.html に組み込む')
     i.add_argument('image'); i.add_argument('--key', required=True); i.add_argument('--html', default=HTML)
     a = p.parse_args()
-    {'extract': cmd_extract, 'build': cmd_build, 'inject': cmd_inject}[a.cmd](a)
+    {'extract': cmd_extract, 'build': cmd_build, 'inject': cmd_inject, 'measure': cmd_measure}[a.cmd](a)
 
 
 if __name__ == '__main__':

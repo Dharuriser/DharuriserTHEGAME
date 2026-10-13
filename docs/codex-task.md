@@ -296,11 +296,110 @@ Cell 8: empty (only green).
 
 報告: 合否とコマごとの問題点、最終プロンプト、作ったファイルのパス。`index.html` の組み込みと git 操作は Claude Code が行う。
 
-## 第2弾以降（第1弾が合格してから）
+## 第2弾: やられ〜ダウン〜起き上がり（全キャラ）・enemyC の軽業・enemyA/B の歩きの直し（2026-10-13 追加）
 
-同じ手順で、`docs/sprite-spec.md` の表の順に進める。
+オーナーの評価: 歩きの作り直しは合格。追加の依頼は次の3つ。どれも「ビリーの絵をポーズ見本にして描き直す」同じ方法で作る。
 
-1. 被弾〜ダウン〜起き上がり（`--grid 3x3 --anchor first --air 2,3`、出力名 `Dharuriser_damage_v1`）
-2. パンチ（`--grid 3x2 --frames 6 --anchor first`、出力名 `Dharuriser_punch_v1`）
+共通の決まり（歩きのときと同じ）:
+- 組み込みの `image_gen` を使う。生成は**1キャラ1モーションにつき最大3回**。保存先は `sprites/generated/`、整形は `tools/sprite_pipeline.py build`。
+- 背景は純緑 #00FF00、影・地面・文字・枠線なし。全コマ同じ縮尺。右向き・斜め前（3/4ビュー）。1ピクセルの暗い輪郭線。
+- 判定は `_check.png`・ポーズ見本・デザイン見本を `view_image` で並べて見る。
+- 2回目以降は、うまくいかなかった点を**画面上の位置と重なり方**で具体的に指示し直す。
+- `index.html` には触れない。git 操作はしない（Claude Code が行う）。
 
-プロンプトは `docs/sprite-spec.md` の「プロンプトの例」の最初の2段落をそのまま使い、「Cells in reading order」以降を表の内容に差し替える。
+キャラごとの値（デザイン見本と build の追加オプション。今ゲームに入っている立ちコマと同じ大きさ・位置に揃えるための値）:
+
+| キャラ | 出力名の頭 | デザイン見本 | build の追加オプション | 体格のメモ |
+|---|---|---|---|---|
+| 主人公 | `Dharuriser` | `sprites/reference/Dharuriser_design_sheet.png` と `sprites/generated/walk_dd_v3.png` | `--ref-height 236 --anchor-x 168 --baseline 299` | 大人のヒーロー体型 |
+| enemyA | `enemyA` | `sprites/reference/enemyA_design_ref.png` | `--ref-height 240 --anchor-x 165 --baseline 299` | **ずんぐり・横幅が広い・前かがみ・太い腕**（力自慢） |
+| enemyB | `enemyB` | `sprites/reference/enemyB_design_ref.png` | `--ref-height 248 --anchor-x 177 --baseline 298` | **細身・長身・肩幅が狭い・背筋が伸びている** |
+| enemyC | `enemyC` | `sprites/reference/enemyC_design_ref.png` | `--ref-height 184 --anchor-x 208 --baseline 299` | 小柄。**立ち姿が低いしゃがみ構え**（身長の値はしゃがんだ高さ） |
+| DICE | `DICE` | `sprites/reference/DICE_design_ref.png` | `--ref-height 246 --anchor-x 185 --baseline 299` | 細身の紳士 |
+| Bajioh | `Bajioh` | `sprites/reference/Bajioh_design_ref.png` | `--ref-height 237 --anchor-x 170 --baseline 299` | コート姿・腕に円形の装置 |
+
+### 2-1. やられ〜ダウン〜起き上がり（6キャラ全部）— 出力 `<頭>_damage_dd_vN`
+
+参考画像: 1) `sprites/reference/DD_Billy_damage_pose_ref.png`（**ポーズ見本**, 3列×3行） 2) そのキャラのデザイン見本
+3) `sprites/generated/walk_dd_v3.png`（主人公の合格例。絵柄の細かさ・縮尺の手本。キャラのデザインは写さない）
+
+```
+Image 1 is a POSE reference only: a 3x3 sheet of a classic beat-'em-up knock-down sequence.
+Image 2 is the exact character design reference for the character to draw: <見た目と体格を具体的に書く>
+Image 3 only shows the target pixel-art finish and scale; do NOT copy its character.
+Keep the proportions, body type, pixel-art style and palette of Image 2. Do NOT copy the clothes, hair, face or colors of Image 1.
+
+Create a pixel-art sprite sheet with EXACTLY the same layout as Image 1: 3 columns x 3 rows, 9 cells of identical size.
+In every cell draw the Image 2 character in the same pose as the same cell of Image 1.
+The character faces RIGHT (3/4 front view in the standing cells) and is knocked BACKWARD to the LEFT: when lying down, the head is on the LEFT and the feet on the RIGHT.
+Same scale in every cell. Standing/lying cells touch the same ground line near the bottom of the cell; airborne cells float clearly above it.
+Crisp 1-pixel dark outline, limited palette matching Image 2. Background: solid flat pure green #00FF00. No shadow, no floor, no text, no grid lines.
+
+Cells in reading order:
+1. the idle stance exactly as the large pose in Image 2
+2. HIT: just punched, upper body recoils and doubles over, head snapped, feet still on the ground
+3. AIRBORNE: thrown backward, feet off the ground, body tilted about 45 degrees, head up-left, legs trailing down-right
+4. AIRBORNE: falling flat on the back, body horizontal in the air, head on the left, face up, legs slightly raised
+5. LYING: flat on the back on the ground, head left, feet right, arms limp
+6. STARTING TO RISE: still on the back, knees pulled up, head and shoulders lifting
+7. SITTING UP: sitting on the ground, one hand on the floor, upper body upright
+8. ONE KNEE: crouching on one knee, about to stand
+9. the idle stance again (same as cell 1)
+```
+
+整形: `python3 tools/sprite_pipeline.py build sprites/generated/<頭>_damage_dd_vN.png --grid 3x3 --name <頭>_damage_dd_vN --anchor first --air 2,3 <表の追加オプション>`
+（`--anchor first`: 1コマ目に合わせた同じずらし量を全コマに使う。`--air 2,3`: 3・4コマ目は空中なので足元を地面に揃えない）
+
+合格条件:
+- 9コマが上の順番どおりの姿勢で、流れがつながっている（のけぞる→浮く→背中から落ちる→仰向け→起き始め→座る→片ひざ→立つ）
+- 倒れたとき**頭が左・足が右**。3・4コマ目は地面から浮いている。5〜8コマ目は地面に付いている
+- デザイン見本と同じキャラ・同じ体格に見える。体が欠けていない（整形後 400x300 のコマからはみ出していない）・緑が残っていない
+
+### 2-2. enemyC の軽業（移動）— 出力 `enemyC_walk_dd_vN`
+
+今の enemyC の移動は「しゃがみ→飛び込み→逆立ち→着地」の6コマを往復再生していて、間のコマが足りず軽業に見えない。
+前方の手つき回転（ハンドスプリング）を8コマで作る。
+
+参考画像: 1) `sprites/reference/DD_Billy_acrobat_pose_ref.png`（**ポーズ見本**, 3列×3行。1・2・8コマ目は enemyC の今の絵、3〜7コマ目がビリーの回転）
+2) `sprites/reference/enemyC_design_ref.png` 3) `sprites/generated/walk_dd_v3.png`（仕上がりの手本）
+
+```
+(最初の2段落は 2-1 と同じ。レイアウトは 3 columns x 3 rows, 9 cells, 最後の1コマは空)
+The character faces RIGHT and travels to the RIGHT doing a forward handspring. Every cell touches the same ground line with feet or hands, except cell 7.
+
+Cells in reading order:
+1. the low crouching idle stance exactly as the large pose in Image 2
+2. LUNGE: pushes off and lunges forward, body low and stretched, arms reaching forward
+3. DIVE: hands planted on the ground, head down near the hands, hips high, legs kicking up behind (body about 45 degrees)
+4. KICK-UP: on the hands, legs swinging up past 45 degrees, body almost vertical upside-down
+5. HANDSTAND: vertical handstand, legs straight up, cloak hanging down toward the ground
+6. ARCH-OVER: legs have passed over, feet touching down on the RIGHT, back arched like a bridge, head and arms trailing on the left, hands just leaving the ground
+7. SNAP-UP: airborne just above the ground, body curling upright, knees tucked, facing right
+8. LANDING: deep crouch on the ground, facing right, cloak settling
+9. empty (only green)
+The hooded purple cloak must follow gravity and the motion in every cell (it hangs down toward the ground when upside-down).
+```
+
+整形: `python3 tools/sprite_pipeline.py build sprites/generated/enemyC_walk_dd_vN.png --grid 3x3 --frames 8 --name enemyC_walk_dd_vN --anchor center --ref-height 184 --anchor-x 208 --baseline 299`
+
+合格条件: 2〜8コマ目が1回転として順番につながる（体の角度が毎コマ少しずつ進む）／5コマ目が逆立ち／フードとマントが全コマで enemyC／小柄な体格のまま。
+
+### 2-3. enemyA・enemyB の歩きの直し — 出力 `enemyA_walk_dd_vN`（v3 から）、`enemyB_walk_dd_vN`（v3 から）
+
+作り直した歩き（v2）は動きは合格だが、**2体の体格差が小さくなってしまった**（A が細く・背筋が伸び、B が太くなった）。
+元の絵は「A＝ずんぐり・横幅が広い・前かがみ」「B＝細身・長身」。動きはそのまま、体格だけ元に戻す。
+
+手順は「敵の歩きの作り直し」と同じ（ポーズ見本 `DD_Billy_walk_pose_ref.png`、4列×2行、`--grid 4x2 --frames 7 --anchor hip` ＋表の追加オプション）。違いは次の3点。
+- 参考画像の3枚目は、**そのキャラの前回の合格版**（`sprites/generated/enemyA_walk_dd_v2.png` / `enemyB_walk_dd_v2.png`）。「この動きのまま、体格を Image 2 に合わせて直す」と指示する。
+- プロンプトに体格をはっきり書く。
+  enemyA: `a short-necked, very broad and heavy bruiser: wide shoulders, thick arms, barrel chest, hunched forward posture; the poncho is wide and bulky`
+  enemyB: `a tall, lean, narrow-shouldered man standing upright; long thin legs, slim arms; the poncho hangs narrow and close to the body`
+- 整形後に体格を数値で確かめる: `python3 tools/sprite_pipeline.py measure sprites/build/<出力名>.png --first 1 --last 6`
+  合格の目安 … **enemyA: 胴の幅の平均が 140px 以上** ／ **enemyB: 胴の幅の平均が 95px 以下**（元の絵: A の立ち 176px・B の立ち 116px、B の歩き 85px。前回 v2: A 127px・B 107px）
+
+合格条件: 上の数値 ＋ 前回と同じ歩きの条件（大股→中→そろう×2、2コマ目と5コマ目で足・腕が逆）。
+1コマ目（立ち）は Claude Code が元の絵に差し替えるので、少し違っていてもよい。
+
+## 第3弾以降
+
+第2弾までと同じ方法（ビリーの絵をポーズ見本にする）で、`docs/sprite-spec.md` の表の順に進める。次はパンチ（`--grid 3x2 --frames 6 --anchor first`）。
