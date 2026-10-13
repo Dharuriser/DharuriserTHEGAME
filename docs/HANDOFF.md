@@ -1,6 +1,6 @@
 # 引き継ぎ書（Codex / Claude Code 共用）
 
-最終更新: 2026-09-28 / 作業ブランチ: `claude/loving-wright-wu1w7r`（`main` には未反映）
+最終更新: 2026-10-13 / 作業ブランチ: `claude/loving-wright-wu1w7r`（`main` には未反映）
 
 ## このプロジェクト
 
@@ -62,6 +62,11 @@
     ダルライザーで描き直させた（`walk_dd_v3.png` が合格。文章で足の左右を指示するより、見本の絵を写させる方がうまくいった）。
     足の開き: 大股→中→そろう を左右で2回。1コマ目と4コマ目で前に出る足・腕の振りが逆。
     コード: `ANIM.p.walk=['walk',[1,2,3,4,5,6],6]`、`WALK_STRIDE.p=30`（DDと同じ0.17秒ごとにポーズ切替。オーナーの選択で「足が少し滑る」のは許容）。
+  - **敵4体（enemyA・enemyB・DICE・Bajioh）の歩きも同じ方式で作り直し、差し替え済み（2026-10-13）。** 手順は `docs/codex-task.md` の「敵の歩きの作り直し」。
+    合格: `enemyA_walk_dd_v2` / `enemyB_walk_dd_v2` / `DICE_walk_dd_v1` / `Bajioh_walk_dd_v1`（ポーズ見本＋その敵のデザイン見本＋主人公の合格例の3枚を渡すと1〜2回で通った）。
+    コード: n・l・b・bj とも `walk:['walk',[1,2,3,4,5,6],5]`、`WALK_STRIDE` は「歩く速さ×10フレーム」（n:18, l:12, b:15, bj:25）、`FOFS` は空に。
+    整形は敵ごとの立ち位置に合わせる `--ref-height / --anchor-x / --baseline` を付ける（値は依頼書の表）。
+    **enemyC（軽業師）は歩きではなくアクロバット移動なので未着手。**
   - Codex の呼び出しで詰まった点: `~/.codex/config.toml` の既定モデル `gpt-6-astra` はこの環境では使えない（`--model gpt-5.6-sol` を指定）。
     npm 版 Codex（0.157.1）は ChatGPT アプリ常駐の `code-mode-host` と通信形式が合わず、コマンドが全部失敗する。
     ChatGPT アプリ同梱の `/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex` で `codex exec` すると動いた
