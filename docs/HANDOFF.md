@@ -67,6 +67,18 @@
     コード: n・l・b・bj とも `walk:['walk',[1,2,3,4,5,6],5]`、`WALK_STRIDE` は「歩く速さ×10フレーム」（n:18, l:12, b:15, bj:25）、`FOFS` は空に。
     整形は敵ごとの立ち位置に合わせる `--ref-height / --anchor-x / --baseline` を付ける（値は依頼書の表）。
     **enemyC（軽業師）は歩きではなくアクロバット移動なので未着手。**
+  - **第2弾（2026-10-13）: やられ〜ダウン〜起き上がり（主人公＋敵5体）、enemyC の軽業、enemyA/B の体格直し → すべて差し替え済み。** 手順は `docs/codex-task.md` の「第2弾」。
+    - やられ〜起き上がり: ビリーの絵から作った見本 `sprites/reference/DD_Billy_damage_pose_ref.png`（3×3）で6キャラとも生成。
+      コマの意味は全キャラ共通: 0 立ち / 1 のけぞり / 2 浮く / 3 背中から落ちる（空中）/ 4 仰向け / 5 起き始め / 6 座る / 7 片ひざ / 8 立ち。
+      コード: `down=[1,2,2,3,3,4,4,…]`、`dying` も同じ並び、`dead=[4]`、`getup=[5,6,7,8]`、`FLOOR_F` は全員4。**各状態の合計フレーム数は変更前と同じ**（難しさは変えていない。テストで確認済み）。
+      主人公の `hurt` は `[1,1,1,0]`（絵でのけぞるので、描画時に体を傾ける `dsRot` はやめた）。
+    - enemyC の移動: 前方の手つき回転7コマ（見本 `DD_Billy_acrobat_pose_ref.png`）。`ANIM.t.walk=['walk',[1,2,3,4,5,6,7],5]`。
+      ゆっくり動くときも回転が途中で止まらないよう、`trackWalk()` で軽業師だけコマ送りの最低速度を付けた。
+    - enemyA/B の歩き: 最初の作り直し（v2）で2体の体格差が縮んでいた（オーナー指摘）。体格を数値基準に入れて作り直し（`tools/sprite_pipeline.py measure`）。
+      胴の幅の平均: A 127→149px、B 107→75px。**立ちコマは作り直し前の元の絵に戻した**（`sprites/reference/original_idle/`）。
+    - 仕上げ: 生成した「立ち」のコマは `sprite_pipeline.py setframe` でゲーム内の立ち姿そのものに差し替える（立ちに戻る瞬間に絵が変わらないように）。
+      最終版は `sprites/build/<キャラ>_damage_final.png`、`enemyA/B/C_walk_final.png`。
+    - 生成AIは最初と最後の立ちコマの大きさを揃えられないことがある（enemyA のやられは3回ともそれで「不合格」）。立ちコマは差し替えるので、そこは合否に入れなくてよい。
   - Codex の呼び出しで詰まった点: `~/.codex/config.toml` の既定モデル `gpt-6-astra` はこの環境では使えない（`--model gpt-5.6-sol` を指定）。
     npm 版 Codex（0.157.1）は ChatGPT アプリ常駐の `code-mode-host` と通信形式が合わず、コマンドが全部失敗する。
     ChatGPT アプリ同梱の `/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex` で `codex exec` すると動いた

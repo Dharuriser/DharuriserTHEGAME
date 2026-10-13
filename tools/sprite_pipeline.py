@@ -344,6 +344,19 @@ def cmd_measure(args):
         print(f'平均(コマ{sel[0][0]}〜{sel[-1][0]}): 身長 {np.mean([r[1] for r in sel]):.0f}px / 胴の幅 {np.mean([r[2] for r in sel]):.0f}px / 面積 {np.mean([r[3] for r in sel]):.0f}')
 
 
+def cmd_setframe(args):
+    """整形済みシートの指定コマを、別の画像の1コマで置き換える。
+    生成した「立ち」のコマを、ゲームに入っている立ち姿そのものに差し替えるために使う
+    (やられ・歩きから立ちに戻る瞬間に絵が変わって見えないようにする)"""
+    sheet = Image.open(args.image).convert('RGBA')
+    src = Image.open(args.src).convert('RGBA')
+    cell = src.crop((args.src_frame * CELL_W, 0, (args.src_frame + 1) * CELL_W, CELL_H))
+    for f in (int(x) for x in args.frames.split(',')):
+        sheet.paste(cell, (f * CELL_W, 0))
+    sheet.save(args.out or args.image)
+    print(f'{args.frames}コマ目を {args.src} の{args.src_frame}コマ目で置き換えました -> {args.out or args.image}')
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest='cmd', required=True)
@@ -369,10 +382,14 @@ def main():
     b.add_argument('--ms', type=int, default=100, help='確認GIFの1コマの長さ(ミリ秒)')
     m = sub.add_parser('measure', help='整形済みシートの各コマの身長・胴の幅を測る')
     m.add_argument('image'); m.add_argument('--first', type=int, default=0); m.add_argument('--last', type=int, default=-1)
+    f = sub.add_parser('setframe', help='整形済みシートの指定コマを別の画像の1コマで置き換える')
+    f.add_argument('image'); f.add_argument('--frames', required=True, help='置き換えるコマ番号(カンマ区切り 例: 0,8)')
+    f.add_argument('--src', required=True, help='元にする画像(1コマ400x300 の横並び、または1コマだけの画像)')
+    f.add_argument('--src-frame', type=int, default=0); f.add_argument('--out', help='保存先(省略すると上書き)')
     i = sub.add_parser('inject', help='整えた画像を index.html に組み込む')
     i.add_argument('image'); i.add_argument('--key', required=True); i.add_argument('--html', default=HTML)
     a = p.parse_args()
-    {'extract': cmd_extract, 'build': cmd_build, 'inject': cmd_inject, 'measure': cmd_measure}[a.cmd](a)
+    {'extract': cmd_extract, 'build': cmd_build, 'inject': cmd_inject, 'measure': cmd_measure, 'setframe': cmd_setframe}[a.cmd](a)
 
 
 if __name__ == '__main__':
